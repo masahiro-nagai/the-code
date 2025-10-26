@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Code アシスタント</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- 初期画面 -->
+        <div id="initial-screen">
+            <h1>未来は、まだ描かれていない地図のようなもの。</h1>
+            <p>一緒に、あなただけのコンパスを作りましょう。</p>
+            
+            <div class="input-section">
+                <textarea 
+                    id="user-input" 
+                    placeholder="例：私は将来どのようにありたいか、明確に描けなくて悩んでいます…"
+                    rows="6"
+                ></textarea>
+                
+                <button id="start-button">対話を始める</button>
+            </div>
+            
+            <div class="token-section">
+                <p class="token-label">Hugging Face APIトークン:</p>
+                <input 
+                    type="password" 
+                    id="api-token" 
+                    placeholder="APIトークンを入力してください"
+                />
+                <small>※セキュリティのため、毎回入力が必要です</small>
+            </div>
+        </div>
+
+        <!-- 対話・結果画面 -->
+        <div id="main-screen" style="display: none;">
+            <div id="conversation-history"></div>
+            <div id="response-area"></div>
+            
+            <div class="input-section">
+                <textarea 
+                    id="continue-input" 
+                    placeholder="応答を入力してください..."
+                    rows="4"
+                ></textarea>
+                <button id="continue-button">送信</button>
+                <button id="reset-button">最初に戻る</button>
+            </div>
+        </div>
+
+        <!-- ローディングインジケーター -->
+        <div id="loading" class="hidden">
+            <div class="spinner"></div>
+            <p>思考中...</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 The Code アシスタント - あなたの未来を共に描く</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

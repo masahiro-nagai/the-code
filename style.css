@@ -1,0 +1,281 @@
+/* リセットとベーススタイル */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* メインコンテナ */
+#app-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 初期画面 */
+#initial-screen {
+    text-align: center;
+    animation: fadeIn 1s ease-in;
+}
+
+#initial-screen h1 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #2c3e50;
+    font-weight: 300;
+    line-height: 1.4;
+}
+
+#initial-screen > p {
+    font-size: 1.2rem;
+    margin-bottom: 40px;
+    color: #7f8c8d;
+}
+
+/* 入力セクション */
+.input-section {
+    margin: 30px 0;
+}
+
+textarea {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+    background-color: white;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 10px 5px;
+    font-family: inherit;
+}
+
+button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+#reset-button {
+    background-color: #95a5a6;
+}
+
+#reset-button:hover {
+    background-color: #7f8c8d;
+}
+
+/* トークン入力セクション */
+.token-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.token-label {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    color: #555;
+    text-align: left;
+}
+
+#api-token {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: 'Courier New', monospace;
+    transition: border-color 0.3s ease;
+}
+
+#api-token:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.token-section small {
+    display: block;
+    margin-top: 8px;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+/* 対話画面 */
+#main-screen {
+    animation: fadeIn 0.5s ease-in;
+}
+
+#conversation-history {
+    margin-bottom: 20px;
+}
+
+.message {
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.message.user {
+    background-color: #e3f2fd;
+    text-align: right;
+    margin-left: 60px;
+}
+
+.message.ai {
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-right: 60px;
+}
+
+.message-label {
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #7f8c8d;
+}
+
+.message-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+#response-area {
+    min-height: 100px;
+}
+
+/* ローディングインジケーター */
+#loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#loading.hidden {
+    display: none;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+#loading p {
+    color: white;
+    margin-top: 20px;
+    font-size: 1.2rem;
+}
+
+/* フッター */
+footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    font-size: 0.9rem;
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    #initial-screen h1 {
+        font-size: 1.5rem;
+    }
+
+    #initial-screen > p {
+        font-size: 1rem;
+    }
+
+    #app-container {
+        padding: 20px 15px;
+    }
+
+    .message.user {
+        margin-left: 20px;
+    }
+
+    .message.ai {
+        margin-right: 20px;
+    }
+
+    button {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
+
