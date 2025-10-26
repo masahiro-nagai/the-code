@@ -96,7 +96,7 @@ const STORAGE_KEY_TOKEN = 'the_code_hf_token';
 // ページ読み込み時にトークンを復元
 function loadSavedToken() {
     const savedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
-    if (savedToken) {
+    if (savedToken && apiTokenInput) {
         apiTokenInput.value = savedToken;
         apiToken = savedToken;
         console.log('保存されたAPIトークンを読み込みました');
@@ -111,33 +111,48 @@ function saveToken(token) {
     }
 }
 
-// イベントリスナーの設定
-startButton.addEventListener('click', handleStart);
-continueButton.addEventListener('click', handleContinue);
-resetButton.addEventListener('click', handleReset);
-
-// Enterキー + Shiftキーで送信
-userInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.shiftKey) {
-        e.preventDefault();
-        handleStart();
+// イベントリスナーを設定する関数
+function setupEventListeners() {
+    // ボタンのイベントリスナー
+    if (startButton) {
+        startButton.addEventListener('click', handleStart);
     }
-});
-
-continueInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.shiftKey) {
-        e.preventDefault();
-        handleContinue();
+    if (continueButton) {
+        continueButton.addEventListener('click', handleContinue);
     }
-});
-
-// APIトークン保存のイベントリスナー
-apiTokenInput.addEventListener('change', () => {
-    const token = apiTokenInput.value.trim();
-    if (token) {
-        saveToken(token);
+    if (resetButton) {
+        resetButton.addEventListener('click', handleReset);
     }
-});
+
+    // Enterキー + Shiftキーで送信
+    if (userInput) {
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault();
+                handleStart();
+            }
+        });
+    }
+
+    if (continueInput) {
+        continueInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault();
+                handleContinue();
+            }
+        });
+    }
+
+    // APIトークン保存のイベントリスナー
+    if (apiTokenInput) {
+        apiTokenInput.addEventListener('change', () => {
+            const token = apiTokenInput.value.trim();
+            if (token) {
+                saveToken(token);
+            }
+        });
+    }
+}
 
 /**
  * 対話開始時の処理
@@ -593,6 +608,11 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('The Code アシスタントが起動しました。');
     console.log('フェーズ管理システム: 有効');
     
+    // イベントリスナーを設定
+    setupEventListeners();
+    
     // 保存されたAPIトークンを読み込み
     loadSavedToken();
+    
+    console.log('初期化完了');
 });
