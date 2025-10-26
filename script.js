@@ -90,6 +90,27 @@ const PHASE3_PROMPT = `あなたは未来予測の専門家です。
 - ポジティブで希望に満ちた内容にしてください。
 `;
 
+// LocalStorageのキー
+const STORAGE_KEY_TOKEN = 'the_code_hf_token';
+
+// ページ読み込み時にトークンを復元
+function loadSavedToken() {
+    const savedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
+    if (savedToken) {
+        apiTokenInput.value = savedToken;
+        apiToken = savedToken;
+        console.log('保存されたAPIトークンを読み込みました');
+    }
+}
+
+// トークンを保存
+function saveToken(token) {
+    if (token) {
+        localStorage.setItem(STORAGE_KEY_TOKEN, token);
+        console.log('APIトークンを保存しました');
+    }
+}
+
 // イベントリスナーの設定
 startButton.addEventListener('click', handleStart);
 continueButton.addEventListener('click', handleContinue);
@@ -110,12 +131,20 @@ continueInput.addEventListener('keydown', (e) => {
     }
 });
 
+// APIトークン保存のイベントリスナー
+apiTokenInput.addEventListener('change', () => {
+    const token = apiTokenInput.value.trim();
+    if (token) {
+        saveToken(token);
+    }
+});
+
 /**
  * 対話開始時の処理
  */
 async function handleStart() {
     const userMessage = userInput.value.trim();
-    apiToken = apiTokenInput.value.trim();
+    const inputToken = apiTokenInput.value.trim();
 
     // バリデーション
     if (!userMessage) {
@@ -123,8 +152,12 @@ async function handleStart() {
         return;
     }
 
-    if (!apiToken) {
-        alert('Hugging Face APIトークンを入力してください。');
+    // トークンの取得と保存
+    if (inputToken) {
+        apiToken = inputToken;
+        saveToken(apiToken);
+    } else if (!apiToken) {
+        alert('Hugging Face APIトークンを入力してください。\n一度入力すれば次回以降は自動的に使用されます。');
         return;
     }
 
@@ -559,4 +592,7 @@ function handleAPIError(error) {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('The Code アシスタントが起動しました。');
     console.log('フェーズ管理システム: 有効');
+    
+    // 保存されたAPIトークンを読み込み
+    loadSavedToken();
 });
