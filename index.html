@@ -36,10 +36,35 @@
 
         <!-- 対話・結果画面 -->
         <div id="main-screen" style="display: none;">
-            <div id="conversation-history"></div>
-            <div id="response-area"></div>
+            <!-- 対話エリア -->
+            <div id="conversation-area">
+                <div id="conversation-history"></div>
+            </div>
+
+            <!-- マンダラチャート -->
+            <div id="mandala-chart-container" class="hidden">
+                <h2>あなたの未来の地図</h2>
+                <div class="mandala-grid">
+                    <div class="mandala-cell" id="cell-1"></div>
+                    <div class="mandala-cell" id="cell-2"></div>
+                    <div class="mandala-cell" id="cell-3"></div>
+                    <div class="mandala-cell" id="cell-4"></div>
+                    <div class="mandala-cell mandala-center" id="cell-center"></div>
+                    <div class="mandala-cell" id="cell-5"></div>
+                    <div class="mandala-cell" id="cell-6"></div>
+                    <div class="mandala-cell" id="cell-7"></div>
+                    <div class="mandala-cell" id="cell-8"></div>
+                </div>
+            </div>
+
+            <!-- 未来予測シミュレーション -->
+            <div id="simulation-area" class="hidden">
+                <h2>未来予測シミュレーション</h2>
+                <div id="simulation-content"></div>
+            </div>
             
-            <div class="input-section">
+            <!-- 入力エリア -->
+            <div class="input-section" id="input-area">
                 <textarea 
                     id="continue-input" 
                     placeholder="応答を入力してください..."

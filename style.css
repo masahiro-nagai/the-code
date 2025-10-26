@@ -216,6 +216,100 @@ button:active {
     font-size: 1.2rem;
 }
 
+/* マンダラチャート */
+#mandala-chart-container {
+    margin: 40px 0;
+    animation: fadeIn 0.8s ease-in;
+}
+
+#mandala-chart-container h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+    font-weight: 400;
+}
+
+.mandala-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.mandala-cell {
+    background-color: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    transition: all 0.3s ease;
+    animation: slideIn 0.5s ease-out;
+    word-wrap: break-word;
+}
+
+.mandala-cell:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    border-color: #3498db;
+}
+
+.mandala-center {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.mandala-center:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+}
+
+/* 未来予測シミュレーション */
+#simulation-area {
+    margin: 40px 0;
+    padding: 30px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.8s ease-in;
+}
+
+#simulation-area h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 1.6rem;
+    font-weight: 400;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+#simulation-content {
+    line-height: 1.8;
+    color: #555;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* 対話エリア */
+#conversation-area {
+    margin-bottom: 30px;
+}
+
 /* フッター */
 footer {
     text-align: center;
@@ -276,6 +370,25 @@ footer {
     button {
         width: 100%;
         margin: 5px 0;
+    }
+
+    .mandala-grid {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+    }
+
+    .mandala-cell {
+        min-height: 80px;
+        padding: 15px;
+        font-size: 0.9rem;
+    }
+
+    #mandala-chart-container h2 {
+        font-size: 1.4rem;
+    }
+
+    #simulation-area {
+        padding: 20px;
     }
 }
 

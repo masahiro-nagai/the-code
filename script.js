@@ -1,8 +1,19 @@
 // 定数定義
 const API_URL = 'https://api-inference.huggingface.co/models/Rakuten/RakutenAI-7B-instruct';
 
-// 会話履歴を保持する配列
+// 対話フェーズの定義
+const PHASE = {
+    EXPLORATION: 1,      // フェーズ1: 中心テーマの探求
+    THEME_GENERATION: 2, // フェーズ2: 周辺テーマの生成
+    SIMULATION: 3        // フェーズ3: 未来予測
+};
+
+// グローバル状態
+let currentPhase = PHASE.EXPLORATION;
 let conversationHistory = [];
+let centralTheme = '';
+let conversationCount = 0;
+let apiToken = '';
 
 // DOM要素の取得
 const initialScreen = document.getElementById('initial-screen');
@@ -14,22 +25,69 @@ const continueInput = document.getElementById('continue-input');
 const continueButton = document.getElementById('continue-button');
 const resetButton = document.getElementById('reset-button');
 const conversationHistoryDiv = document.getElementById('conversation-history');
-const responseArea = document.getElementById('response-area');
+const mandalaChartContainer = document.getElementById('mandala-chart-container');
+const simulationArea = document.getElementById('simulation-area');
+const simulationContent = document.getElementById('simulation-content');
+const inputArea = document.getElementById('input-area');
 const loading = document.getElementById('loading');
 
 // システムプロンプトのテンプレート
-const SYSTEM_PROMPT = `あなたは世界トップレベルのコーチ兼メンタルトレーナーです。
-あなたの役割は、ユーザーが自分自身の内面と対話し、答えを見つける手助けをすることです。
-以下の厳格なルールに従って、ユーザーに応答してください。
+
+// フェーズ1: 中心テーマ探求用プロンプト
+const PHASE1_PROMPT = `あなたは世界トップレベルのコーチ兼メンタルトレーナーです。
+あなたの役割は、ユーザーが自分自身の内面と対話し、本当に目指したいことを見つける手助けをすることです。
 
 # ルール
 - 決して直接的な「答え」や「解決策」を提示してはいけません。
 - ユーザーの言葉を肯定し、共感を示してください。
 - 常に、ユーザーが内省を深めるための「質問」で返答を締めくくってください。
 - 専門用語を避け、穏やかで分かりやすい言葉を使ってください。
-- ユーザーの最初の入力に対しては、まず自己紹介と役割を伝え、最初の質問を投げかけてください。
-- 応答は200-300文字程度に簡潔にまとめてください。
+- 応答は150-250文字程度に簡潔にまとめてください。
 
+# 対話の目的
+3-5回の対話を通じて、ユーザーが「本当にありたい姿」「達成したい核心」を言語化できるように導いてください。
+`;
+
+// フェーズ2: 8つの周辺テーマ生成用プロンプト
+const PHASE2_PROMPT = `あなたは世界トップレベルの戦略プランナーです。
+ユーザーとの対話の結果、中心となるテーマが「{central_theme}」に決まりました。
+
+# あなたのタスク
+この中心テーマ「{central_theme}」を達成するために不可欠な、8つの基本要素を提案してください。
+
+# 出力形式の厳格なルール
+- 回答は、必ず以下の形式で、番号付きリストのみを出力してください。
+- 各項目は15文字以内の簡潔なキーワードにしてください。
+- 各項目の前後に、余計な挨拶や説明文は一切含めないでください。
+- 必ず8項目を生成してください。
+
+1. [基本要素1]
+2. [基本要素2]
+3. [基本要素3]
+4. [基本要素4]
+5. [基本要素5]
+6. [基本要素6]
+7. [基本要素7]
+8. [基本要素8]
+`;
+
+// フェーズ3: 未来予測シミュレーション用プロンプト
+const PHASE3_PROMPT = `あなたは未来予測の専門家です。
+
+# 中心テーマ
+{central_theme}
+
+# 8つの基本要素
+{themes_list}
+
+# あなたのタスク
+上記の中心テーマと8つの基本要素がすべて達成された場合、ユーザーの人生や状況がどのように変化するかを、
+具体的で感動的な未来の物語として300-400文字で描いてください。
+
+# ルール
+- 「〜になるでしょう」という予測形ではなく、「〜になっています」という現在形で書いてください。
+- 具体的で視覚的にイメージできる表現を使ってください。
+- ポジティブで希望に満ちた内容にしてください。
 `;
 
 // イベントリスナーの設定
@@ -37,7 +95,7 @@ startButton.addEventListener('click', handleStart);
 continueButton.addEventListener('click', handleContinue);
 resetButton.addEventListener('click', handleReset);
 
-// Enterキー + Shiftキーで送信（テキストエリア内）
+// Enterキー + Shiftキーで送信
 userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.shiftKey) {
         e.preventDefault();
@@ -57,7 +115,7 @@ continueInput.addEventListener('keydown', (e) => {
  */
 async function handleStart() {
     const userMessage = userInput.value.trim();
-    const apiToken = apiTokenInput.value.trim();
+    apiToken = apiTokenInput.value.trim();
 
     // バリデーション
     if (!userMessage) {
@@ -76,9 +134,10 @@ async function handleStart() {
 
     // 会話履歴に追加
     addMessageToHistory('user', userMessage);
+    conversationCount++;
 
     // AIに送信
-    await callRakutenAI(userMessage, apiToken);
+    await callRakutenAI(userMessage);
 }
 
 /**
@@ -86,7 +145,6 @@ async function handleStart() {
  */
 async function handleContinue() {
     const userMessage = continueInput.value.trim();
-    const apiToken = apiTokenInput.value.trim();
 
     if (!userMessage) {
         alert('メッセージを入力してください。');
@@ -101,25 +159,174 @@ async function handleContinue() {
 
     // 会話履歴に追加
     addMessageToHistory('user', userMessage);
+    conversationCount++;
 
     // 入力欄をクリア
     continueInput.value = '';
 
-    // AIに送信
-    await callRakutenAI(userMessage, apiToken);
+    // フェーズ1で3回以上対話したら、中心テーマ確定を提案
+    if (currentPhase === PHASE.EXPLORATION && conversationCount >= 3) {
+        // ユーザーのメッセージから中心テーマを抽出してフェーズ2へ
+        await proposeThemeAndGenerate(userMessage);
+    } else {
+        // 通常の対話を続ける
+        await callRakutenAI(userMessage);
+    }
+}
+
+/**
+ * 中心テーマを提案してフェーズ2へ移行
+ */
+async function proposeThemeAndGenerate(lastUserMessage) {
+    // 簡易的に最後のユーザーメッセージから中心テーマを抽出
+    // 実際のプロダクトでは、もっと高度な抽出ロジックが必要
+    centralTheme = extractCentralTheme(lastUserMessage);
+    
+    // コーチからの提案メッセージ
+    const proposalMessage = `お話を聞いていると、あなたの目指す核心は「${centralTheme}」ということかもしれませんね。\n\nこれを中心に据えて、具体的な地図（マンダラチャート）を描いてみませんか？`;
+    
+    addMessageToHistory('ai', proposalMessage);
+    
+    // 入力エリアを非表示にして自動的にフェーズ2へ
+    inputArea.style.display = 'none';
+    
+    // 少し待ってからフェーズ2を開始
+    setTimeout(async () => {
+        currentPhase = PHASE.THEME_GENERATION;
+        await generateMandalaChart();
+    }, 2000);
+}
+
+/**
+ * 中心テーマを抽出（簡易版）
+ */
+function extractCentralTheme(message) {
+    // 会話履歴から重要なキーワードを抽出する簡易的な方法
+    // 実際のプロダクトでは、AIを使ってより正確に抽出すべき
+    
+    // とりあえず、ユーザーの最後のメッセージから20文字程度を抽出
+    let theme = message.substring(0, 30);
+    
+    // もし会話履歴に「〜になりたい」「〜を実現したい」などがあれば優先
+    for (let msg of conversationHistory) {
+        if (msg.role === 'user') {
+            if (msg.content.includes('なりたい')) {
+                const match = msg.content.match(/(.{5,20})なりたい/);
+                if (match) theme = match[1] + 'になること';
+            }
+            if (msg.content.includes('実現したい')) {
+                const match = msg.content.match(/(.{5,20})実現したい/);
+                if (match) theme = match[1] + 'の実現';
+            }
+            if (msg.content.includes('目指')) {
+                const match = msg.content.match(/(.{5,20})目指/);
+                if (match) theme = match[1];
+            }
+        }
+    }
+    
+    return theme.trim();
+}
+
+/**
+ * マンダラチャートを生成
+ */
+async function generateMandalaChart() {
+    loading.classList.remove('hidden');
+    
+    try {
+        // AIに8つの周辺テーマを生成させる
+        const prompt = PHASE2_PROMPT.replace('{central_theme}', centralTheme);
+        const themes = await callRakutenAIForThemes(prompt);
+        
+        if (themes && themes.length === 8) {
+            // マンダラチャートを表示
+            displayMandalaChart(centralTheme, themes);
+            
+            // フェーズ3へ移行：未来予測シミュレーション
+            currentPhase = PHASE.SIMULATION;
+            await generateSimulation(themes);
+        } else {
+            throw new Error('テーマの生成に失敗しました');
+        }
+        
+    } catch (error) {
+        console.error('マンダラチャート生成エラー:', error);
+        alert('マンダラチャートの生成中にエラーが発生しました。もう一度お試しください。');
+        handleReset();
+    } finally {
+        loading.classList.add('hidden');
+    }
+}
+
+/**
+ * 未来予測シミュレーションを生成
+ */
+async function generateSimulation(themes) {
+    loading.classList.remove('hidden');
+    
+    try {
+        const themesList = themes.map((t, i) => `${i + 1}. ${t}`).join('\n');
+        const prompt = PHASE3_PROMPT
+            .replace('{central_theme}', centralTheme)
+            .replace('{themes_list}', themesList);
+        
+        const simulation = await callRakutenAIForSimulation(prompt);
+        
+        // シミュレーション結果を表示
+        simulationContent.textContent = simulation;
+        simulationArea.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('シミュレーション生成エラー:', error);
+        // エラーでも続行可能
+    } finally {
+        loading.classList.add('hidden');
+    }
+}
+
+/**
+ * マンダラチャートを画面に表示
+ */
+function displayMandalaChart(center, themes) {
+    // 中心セルに中心テーマを表示
+    document.getElementById('cell-center').textContent = center;
+    
+    // 周辺8セルにテーマを表示
+    for (let i = 1; i <= 8; i++) {
+        document.getElementById(`cell-${i}`).textContent = themes[i - 1];
+    }
+    
+    // マンダラチャートを表示
+    mandalaChartContainer.classList.remove('hidden');
+    
+    // スムーズにスクロール
+    mandalaChartContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
  * リセット処理
  */
 function handleReset() {
-    // 会話履歴をクリア
+    // 状態をリセット
+    currentPhase = PHASE.EXPLORATION;
     conversationHistory = [];
+    centralTheme = '';
+    conversationCount = 0;
+    apiToken = '';
+    
+    // DOMをクリア
     conversationHistoryDiv.innerHTML = '';
-    responseArea.innerHTML = '';
-    userInput.value = '';
     continueInput.value = '';
-
+    userInput.value = '';
+    
+    // マンダラチャートとシミュレーションを非表示
+    mandalaChartContainer.classList.add('hidden');
+    simulationArea.classList.add('hidden');
+    
+    // 入力エリアを表示
+    inputArea.style.display = 'block';
+    
     // 画面を切り替え
     mainScreen.style.display = 'none';
     initialScreen.style.display = 'block';
@@ -151,95 +358,93 @@ function addMessageToHistory(role, content) {
 }
 
 /**
- * Rakuten AI APIを呼び出す
+ * Rakuten AI APIを呼び出す（通常の対話用）
  */
-async function callRakutenAI(userMessage, apiToken) {
-    // ローディング表示
+async function callRakutenAI(userMessage) {
     loading.classList.remove('hidden');
 
     try {
-        // プロンプトの構築
-        const formattedPrompt = buildPrompt(userMessage);
-
-        // API リクエスト
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                inputs: formattedPrompt,
-                parameters: {
-                    max_new_tokens: 500,
-                    temperature: 0.7,
-                    top_p: 0.9,
-                    do_sample: true
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
-        }
-
-        const data = await response.json();
+        const formattedPrompt = buildPrompt(userMessage, PHASE1_PROMPT);
+        const response = await fetchAI(formattedPrompt);
+        const aiResponse = extractAIResponse(response, formattedPrompt);
         
-        // レスポンスの処理
-        let aiResponse = '';
-        if (Array.isArray(data) && data.length > 0) {
-            aiResponse = data[0].generated_text || '';
-            
-            // プロンプト部分を削除して、AIの応答のみを抽出
-            aiResponse = extractAIResponse(aiResponse, formattedPrompt);
-        } else if (data.generated_text) {
-            aiResponse = data.generated_text;
-            aiResponse = extractAIResponse(aiResponse, formattedPrompt);
-        } else {
-            throw new Error('予期しないレスポンス形式です。');
-        }
-
-        // 会話履歴に追加
         addMessageToHistory('ai', aiResponse);
 
     } catch (error) {
-        console.error('API呼び出しエラー:', error);
-        
-        let errorMessage = 'AIとの通信中にエラーが発生しました。\n';
-        
-        if (error.message.includes('401')) {
-            errorMessage += 'APIトークンが無効です。正しいトークンを入力してください。';
-        } else if (error.message.includes('503')) {
-            errorMessage += 'モデルが現在読み込み中です。少し待ってから再度お試しください。';
-        } else {
-            errorMessage += `エラー詳細: ${error.message}`;
-        }
-        
-        alert(errorMessage);
-        
-        // エラー時は最後のユーザーメッセージを削除
-        if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === 'user') {
-            conversationHistory.pop();
-            const lastMessage = conversationHistoryDiv.lastChild;
-            if (lastMessage) {
-                conversationHistoryDiv.removeChild(lastMessage);
-            }
-        }
+        handleAPIError(error);
     } finally {
-        // ローディング非表示
         loading.classList.add('hidden');
     }
 }
 
 /**
+ * Rakuten AI APIを呼び出す（テーマ生成用）
+ */
+async function callRakutenAIForThemes(prompt) {
+    const formattedPrompt = `[INST]\n${prompt}\n[/INST]`;
+    const response = await fetchAI(formattedPrompt);
+    
+    // レスポンスから8つのテーマを抽出
+    const themes = parseThemes(response);
+    return themes;
+}
+
+/**
+ * Rakuten AI APIを呼び出す（シミュレーション用）
+ */
+async function callRakutenAIForSimulation(prompt) {
+    const formattedPrompt = `[INST]\n${prompt}\n[/INST]`;
+    const response = await fetchAI(formattedPrompt);
+    return extractAIResponse(response, formattedPrompt);
+}
+
+/**
+ * AI APIへのリクエスト共通処理
+ */
+async function fetchAI(prompt) {
+    const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            inputs: prompt,
+            parameters: {
+                max_new_tokens: 500,
+                temperature: 0.7,
+                top_p: 0.9,
+                do_sample: true
+            }
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+    }
+
+    const data = await response.json();
+    
+    let aiResponse = '';
+    if (Array.isArray(data) && data.length > 0) {
+        aiResponse = data[0].generated_text || '';
+    } else if (data.generated_text) {
+        aiResponse = data.generated_text;
+    } else {
+        throw new Error('予期しないレスポンス形式です。');
+    }
+    
+    return aiResponse;
+}
+
+/**
  * プロンプトを構築
  */
-function buildPrompt(currentUserMessage) {
-    // 会話履歴がある場合は、それを含める
+function buildPrompt(currentUserMessage, systemPrompt) {
     let conversationContext = '';
     
-    // 最新の3往復分の会話のみを含める（コンテキストが長くなりすぎないように）
+    // 最新の3往復分の会話のみを含める
     const recentHistory = conversationHistory.slice(-6);
     
     if (recentHistory.length > 0) {
@@ -250,7 +455,7 @@ function buildPrompt(currentUserMessage) {
         });
     }
 
-    const prompt = `${SYSTEM_PROMPT}${conversationContext}
+    const prompt = `${systemPrompt}${conversationContext}
 
 [INST]
 ユーザーの最新の入力は以下の通りです。
@@ -266,7 +471,6 @@ function buildPrompt(currentUserMessage) {
  * AIの応答のみを抽出
  */
 function extractAIResponse(fullResponse, promptText) {
-    // プロンプト部分を削除
     let response = fullResponse;
     
     // [/INST]以降のテキストを抽出
@@ -286,8 +490,73 @@ function extractAIResponse(fullResponse, promptText) {
     return response.trim();
 }
 
+/**
+ * レスポンスから8つのテーマを解析
+ */
+function parseThemes(response) {
+    // [/INST]以降を取得
+    let text = response;
+    const instEndIndex = text.lastIndexOf('[/INST]');
+    if (instEndIndex !== -1) {
+        text = text.substring(instEndIndex + 7).trim();
+    }
+    
+    // 番号付きリストを抽出
+    const themes = [];
+    const lines = text.split('\n');
+    
+    for (let line of lines) {
+        // "1. テーマ" の形式をマッチ
+        const match = line.match(/^\s*\d+\.\s*(.+)/);
+        if (match) {
+            let theme = match[1].trim();
+            // []で囲まれている場合は除去
+            theme = theme.replace(/^\[|\]$/g, '');
+            themes.push(theme);
+            
+            if (themes.length === 8) break;
+        }
+    }
+    
+    // 8つ取得できなかった場合のフォールバック
+    while (themes.length < 8) {
+        themes.push(`要素${themes.length + 1}`);
+    }
+    
+    return themes.slice(0, 8);
+}
+
+/**
+ * APIエラーハンドリング
+ */
+function handleAPIError(error) {
+    console.error('API呼び出しエラー:', error);
+    
+    let errorMessage = 'AIとの通信中にエラーが発生しました。\n';
+    
+    if (error.message.includes('401')) {
+        errorMessage += 'APIトークンが無効です。正しいトークンを入力してください。';
+    } else if (error.message.includes('503')) {
+        errorMessage += 'モデルが現在読み込み中です。少し待ってから再度お試しください。';
+    } else {
+        errorMessage += `エラー詳細: ${error.message}`;
+    }
+    
+    alert(errorMessage);
+    
+    // エラー時は最後のユーザーメッセージを削除
+    if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === 'user') {
+        conversationHistory.pop();
+        conversationCount--;
+        const lastMessage = conversationHistoryDiv.lastChild;
+        if (lastMessage) {
+            conversationHistoryDiv.removeChild(lastMessage);
+        }
+    }
+}
+
 // ページ読み込み時の初期化
 document.addEventListener('DOMContentLoaded', () => {
     console.log('The Code アシスタントが起動しました。');
+    console.log('フェーズ管理システム: 有効');
 });
-
