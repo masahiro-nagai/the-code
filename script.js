@@ -1,5 +1,5 @@
 // 定数定義
-const API_URL = 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-small';
+const API_URL = 'https://api-inference.huggingface.co/models/distilgpt2';
 
 // 対話フェーズの定義
 const PHASE = {
@@ -477,11 +477,10 @@ async function fetchAI(prompt) {
     if (!response.ok) {
         let errorMessage = `API Error: ${response.status}`;
         try {
-            const errorData = await response.json();
-            errorMessage += ` - ${JSON.stringify(errorData)}`;
-        } catch (e) {
             const errorText = await response.text();
             errorMessage += ` - ${errorText}`;
+        } catch (e) {
+            errorMessage += ` - レスポンスの読み取りに失敗`;
         }
         throw new Error(errorMessage);
     }
