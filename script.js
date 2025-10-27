@@ -1,5 +1,5 @@
 // 定数定義
-const API_URL = 'https://api-inference.huggingface.co/models/deepseek-ai/deepseek-vl2-small';
+const API_URL = 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-small';
 
 // 対話フェーズの定義
 const PHASE = {
@@ -454,25 +454,30 @@ async function fetchAI(prompt) {
     console.log('API Token:', apiToken ? '設定済み' : '未設定');
     console.log('Prompt:', prompt.substring(0, 100) + '...');
     
+    // リクエストボディをログ出力
+    const requestBody = {
+        inputs: prompt,
+        parameters: {
+            max_new_tokens: 500,
+            temperature: 0.7,
+            top_p: 0.9,
+            do_sample: true
+        }
+    };
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    
     const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiToken}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            inputs: prompt,
-            parameters: {
-                max_new_tokens: 500,
-                temperature: 0.7,
-                top_p: 0.9,
-                do_sample: true
-            }
-        })
+        body: JSON.stringify(requestBody)
     });
     
     console.log('Response status:', response.status);
     console.log('Response headers:', response.headers);
+    console.log('Response URL:', response.url);
 
     if (!response.ok) {
         let errorMessage = `API Error: ${response.status}`;
