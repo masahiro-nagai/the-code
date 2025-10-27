@@ -1,5 +1,5 @@
 // 定数定義
-const API_URL = 'https://api-inference.huggingface.co/models/Rakuten/RakutenAI-7B-instruct';
+const API_URL = 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-small';
 
 // 対話フェーズの定義
 const PHASE = {
