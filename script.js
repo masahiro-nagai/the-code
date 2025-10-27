@@ -450,6 +450,10 @@ async function callRakutenAIForSimulation(prompt) {
  * AI APIへのリクエスト共通処理
  */
 async function fetchAI(prompt) {
+    console.log('API URL:', API_URL);
+    console.log('API Token:', apiToken ? '設定済み' : '未設定');
+    console.log('Prompt:', prompt.substring(0, 100) + '...');
+    
     const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
@@ -466,10 +470,20 @@ async function fetchAI(prompt) {
             }
         })
     });
+    
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
 
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+        let errorMessage = `API Error: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            errorMessage += ` - ${JSON.stringify(errorData)}`;
+        } catch (e) {
+            const errorText = await response.text();
+            errorMessage += ` - ${errorText}`;
+        }
+        throw new Error(errorMessage);
     }
 
     const data = await response.json();
